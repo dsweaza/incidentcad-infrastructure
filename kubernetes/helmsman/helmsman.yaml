@@ -1,0 +1,108 @@
+context: do-sfo3-k8s-ic-sfo3-c01
+
+metadata:
+  org: "incidentcad.com"
+  maintainer: "Dylan Sweaza"
+  description: "IncidentCAD k8s"
+
+settings:
+  kubeContext: "do-sfo3-k8s-ic-sfo3-c01"
+  
+namespaces:
+  default:
+  gitlab:
+  gitlab-agent:
+  redis:
+  monitoring:
+  database:
+  authentication:
+  cert-manager:
+  ingress-nginx:
+    
+helmRepos:
+  bitnami: "https://charts.bitnami.com/bitnami"
+  gitlab: "https://charts.gitlab.io"
+  prometheus-community: "https://prometheus-community.github.io/helm-charts"
+  hashicorp: "https://helm.releases.hashicorp.com"
+  jetstack: "https://charts.jetstack.io"
+  ingress-nginx: "https://kubernetes.github.io/ingress-nginx"
+
+
+apps:
+  ingress-nginx:
+    namespace: ingress-nginx
+    enabled: true
+    chart: ingress-nginx/ingress-nginx
+    version: 4.4.0
+    set:
+      controller.publishService.enabled: true
+
+  gitlab-runner:
+    # https://docs.gitlab.com/runner/install/kubernetes.html
+    namespace: gitlab
+    enabled: true 
+    chart: gitlab/gitlab-runner
+    version: 0.44.0
+    valuesFile: gitlab-runner/values.yaml
+    set:
+      runnerRegistrationToken: $GITLAB_RUNNERTOKEN
+
+  gitlab-agent:
+    # https://docs.gitlab.com/ee/user/clusters/agent/install/index.html
+    namespace: gitlab-agent
+    enabled: true 
+    chart: gitlab/gitlab-agent
+    version: 1.4.0
+    set:
+      config.token: $GITLAB_AGENT_TOKEN
+      config.kasAddress: wss://kas.gitlab.com
+      image.tag: v15.9.0-rc1
+
+  redis:
+    namespace: redis
+    enabled: true
+    chart: bitnami/redis
+    #version: 16.4.3
+    version: 17.3.17
+    valuesFile: redis/values.yaml
+    set:
+      auth.password: $REDIS_AUTH_PASSWORD
+
+  prometheus-kube-stack:
+    namespace: monitoring
+    enabled: true
+    chart: prometheus-community/kube-prometheus-stack
+    version: 36.0.2
+    valuesFile: prometheus-kube-stack/values.yaml
+
+# Mariadb Galera Cluster
+# https://github.com/bitnami/charts/tree/master/bitnami/mariadb-galera/
+  mariadb-galera:
+    namespace: database
+    enabled: false
+    chart: bitnami/mariadb-galera
+    version: 7.4.1
+    valuesFile: mariadb-galera/values.yaml
+    set:
+      rootUser.password: $MARIADB_ROOT_USER_PASSWORD
+      galera.mariabackup.password: $MARIADB_ROOT_USER_PASSWORD
+
+  keycloak:
+    namespace: authentication
+    enabled: true
+    chart: bitnami/keycloak
+    version: 9.7.3
+    valuesFile: keycloak/values.yaml
+    set:
+      global.postgresql.auth.postgresPassword: $KEYCLOAK_POSTGRES_USER_PASSWORD
+      global.postgresql.auth.password: $KEYCLOAK_POSTGRES_PASSWORD
+      auth.adminPassword: $KEYCLOAK_ADMIN_ASSWORD
+      auth.tls.keystorePassword: $KEYCLOAK_TLS_KEYSTORE_PASSWORD
+      auth.tls.truststorePassword: $KEYCLOAK_TLS_TRUSTSTORE_PASSWORD
+
+  cert-manager:
+    namespace: cert-manager
+    enabled: true
+    chart: jetstack/cert-manager
+    version: 1.9.1
+    valuesFile: cert-manager/values.yaml

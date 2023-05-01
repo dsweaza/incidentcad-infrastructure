@@ -1,0 +1,4 @@
+*.env
+kubernetes/secrets/*.yaml
+.helmsman-tmp
+.idea/

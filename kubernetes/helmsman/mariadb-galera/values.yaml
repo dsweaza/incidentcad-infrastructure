@@ -1,0 +1,7 @@
+galera:
+  name: mariadb-galera
+
+  bootstrap:
+    bootstrapFromNode: 0
+    forceBootstrap: true
+    forceSafeToBootstrap: true

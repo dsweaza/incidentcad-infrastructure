@@ -1,0 +1,24 @@
+image: docker:19.03.13
+
+variables:
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+
+services:
+  - docker:19.03.13-dind
+
+# Update Kubernetes
+Update Kubernetes:
+  stage: deploy
+  image: praqma/helmsman
+  before_script:
+    - kubectl config set-context do-sfo3-k8s-ic-sfo3-c01
+    - kubectl config use-context do-sfo3-k8s-ic-sfo3-c01
+  script:
+    - kubectl apply -f kubernetes/namespaces -R
+    - kubectl apply -f kubernetes/rbac -R
+    - kubectl apply -f kubernetes/issuers -R
+    - helmsman --apply -f kubernetes/helmsman/helmsman.yaml
+
